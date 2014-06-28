@@ -4,189 +4,233 @@
 #include "stdafx.h"
 #include <iostream>
 #include <cstdlib>
+#include <vector>
 
 using namespace std;
 
-struct nodo
+class Node
 {
-    int n;
-    int degree;
-    nodo* parent;
-    nodo* child;
-    nodo* sibling;
+public:
+	int key;
+	int degree;
+	Node* parent;
+	Node* child;
+	Node* sibling;
+
+	void print()
+	{
+		cout << endl << "\tkey = " << key << endl;
+		cout << "\tdegree = " << degree << endl << endl;
+	}
+
+	void printChildren(Node* node, int depth)
+	{
+		Node* tempSibling = node->child;
+
+		int i = 0;
+		while(i < node->degree)
+		{
+			cout << "\tDepth # " << depth << ", Child Node # "<< i <<endl;
+
+			i++, depth++;
+
+			printChildren(tempSibling, depth);
+			tempSibling->print();
+
+			tempSibling = tempSibling->sibling;
+		}
+	}
+
+	Node(int key_ = 0)
+	{
+		key = key_;
+		parent = NULL;
+		child = NULL;
+		sibling = NULL;
+		degree = 0;
+	}
 };
 
 class BinomialHeap
 {
-    private:
-        nodo *H;
-        nodo *Hr;
-        int count;
-    public:
-        nodo* Initializeheap();
-        int Binomial_link(nodo*, nodo*);
-        nodo* Create_nodo(int);
-		nodo* Insert(nodo*, nodo*);
-		nodo* Merge(nodo*, nodo*);
-        nodo* Union(nodo*, nodo*);
-        nodo* Extract_Min(nodo*);
-        int Display(nodo*);
-        nodo* Buscar(nodo*, int);
-        int Decrease_key(nodo*, int, int);
-        int Delete(nodo*, int);
-        BinomialHeap()
-        {
-            H = Initializeheap();
-            Hr = Initializeheap();
-            int count = 1;
-        }
+
+public:
+
+	Node *H;
+
+	BinomialHeap()
+	{
+		H = NULL;
+	}
+
+	Node* makeHeap()
+	{
+		Node* H = NULL;
+		return H;
+	}
+
+
+
+	void merge(Node *&H1, Node *&H2)
+	{
+
+		if(H1 == NULL)
+		{
+			H1 = H2;
+			return;
+		}
+		if(H2 == NULL)
+			return;
+
+		Node*a = H1;
+		Node*b = H2;
+		
+		if(a->degree <= b->degree)
+			H1 = a;
+		else
+			H1 = b;
+
+		if(H1 == b)
+			b = a;
+		a = H1;
+
+		while(b != NULL)
+		{
+			if(a->sibling == NULL)
+			{
+				a->sibling = b;
+				return;
+			}
+			else{
+				if(a->sibling->degree < b->degree)
+				{
+					a = a->sibling;
+				}
+				else
+				{
+					Node*c = b->sibling;
+					b->sibling = a->sibling;
+					a->sibling = b;
+					a = a->sibling;
+					b = c;
+				}
+			}
+		}
+	}
+
+	void link(Node *y, Node *z)
+	{
+		y->parent = z;
+		y->sibling = z->child;
+		z->child = y;
+		z->degree = z->degree + 1;
+	}
+
+	Node* union_h(Node *H, Node *H2)
+	{
+		merge(H, H2); //H = merge(H1, H2);
+
+		if (H == NULL)
+			return H;
+
+		Node* prev_x = NULL;
+		Node* x = H;
+		Node* next_x = x->sibling;
+
+		while(next_x != NULL)
+		{
+			if((x->degree != next_x->degree) || 
+				(next_x->sibling != NULL && next_x->sibling->degree == x->degree))
+			{
+				prev_x = x;
+				x = next_x;
+			}
+			else
+			{
+				if(x->key <= next_x->key)
+				{
+					x->sibling = next_x->sibling;
+					link(next_x, x);
+				}
+				else
+				{
+					if(prev_x == NULL)
+					{
+						H = next_x;
+					}
+					else
+					{
+						prev_x->sibling = next_x;
+					}
+					link(x, next_x);
+					x = next_x;
+				}
+			}
+			next_x = x->sibling;
+		}
+		return H;
+	}
+
+	Node* insert(int key)
+	{
+		Node *H_p = makeHeap();
+		Node *node = new Node(key);
+		H_p = node;
+		H = union_h(H, H_p);
+
+		return H;
+	}
+
+	void print(Node* H = 0)
+	{
+		if(H == 0) H = this->H;
+
+		cout<<"Printing BinomialHeap"<< endl;
+		Node* temp = H;
+
+		int i = 0;
+		while(temp != NULL)
+		{
+			cout << "Depth # "<< 0 << ", Header Node # " << i << endl;
+			temp->print();
+
+			temp->printChildren(temp, 1);
+
+			temp = temp->sibling;
+		}
+	}
+
 };
 
-nodo* BinomialHeap::Initializeheap()
+
+int main()
 {
-    nodo* np;
-    np = NULL;
-    return np;
+	/*BinomialHeap B;
+	B.insert(1);
+
+	BinomialHeap B_temp;
+	B_temp.insert(2);
+
+	B.merge(B.H, B_temp.H);
+	B.print();*/
+
+	BinomialHeap B;
+	B.insert(1);
+	B.insert(2);
+	B.insert(3);
+	B.insert(4);
+	B.insert(5);
+	B.print();
+
+
+	//BinomialHeap B_temp;
+	//B_temp.insert(5);
+	////B_temp.print(B.H);
+
+	//B.H = B.merge(B.H, B_temp.H);
+
+	//B.print(B.H);
+
+	system("PAUSE");
+	return 0;
 }
-
-int BinomialHeap::Binomial_link(nodo* y, nodo* z)
-{
-    y->parent = z;
-    y->sibling = z->child;
-    z->child = y;
-    z->degree = z->degree ++;
-}
-
-nodo* BinomialHeap::Create_nodo(int k)
-{
-    nodo* p = new nodo;
-    p->n = k;
-    return p;
-}
-
-
-nodo* BinomialHeap::Insert(nodo* H, nodo* x)
-{
-    nodo* H1 = Initializeheap();
-    x->parent = NULL;
-    x->child = NULL;
-    x->sibling = NULL;
-    x->degree = 0;
-    H1 = x;
-    H = Union(H, H1);
-    return H;
-}
-
-nodo* BinomialHeap::Merge(nodo* H1, nodo* H2)
-{
-    nodo* H = Initializeheap();
-    nodo* y;
-    nodo* z;
-    nodo* a;
-    nodo* b;
-    y = H1;
-    z = H2;
-    if (y != NULL)
-    {
-        if (z != NULL)
-        {
-            if (y->degree <= z->degree)
-                H = y;
-            else if (y->degree > z->degree)
-                H = z;
-        }
-        else
-            H = y;
-    }
-    else
-        H = z;
-    while (y != NULL && z != NULL)
-    {
-        if (y->degree < z->degree)
-        {
-            y = y->sibling;
-        }
-        else if (y->degree == z->degree)
-        {
-            a = y->sibling;
-            y->sibling = z;
-            y = a;
-        }
-        else
-        {
-            b = z->sibling;
-            z->sibling = y;
-            z = b;
-        }
-    }
-    return H;
-}
-
-nodo* BinomialHeap::Union(nodo* H1, nodo* H2)
-{
-    nodo *H = Initializeheap();
-    H = Merge(H1, H2);
-    if (H == NULL)
-        return H;
-    nodo* prev_x;
-    nodo* next_x;
-    nodo* x;
-    prev_x = NULL;
-    x = H;
-    next_x = x->sibling;
-    while (next_x != NULL)
-    {
-        if ((x->degree != next_x->degree) || ((next_x->sibling != NULL)
-            && (next_x->sibling)->degree == x->degree))
-        {
-            prev_x = x;
-            x = next_x;
-        }
-        else
-	    {
-            if (x->n <= next_x->n)
-            {
-                x->sibling = next_x->sibling;
-                Binomial_link(next_x, x);
-            }
-            else
-            {
-                if (prev_x == NULL)
-                    H = next_x;
-                else
-                    prev_x->sibling = next_x;
-                Binomial_link(x, next_x);
-                x = next_x;
-            }
-	    }
-        next_x = x->sibling;
-    }
-    return H;
-}
-
-nodo* BinomialHeap::Extract_Min(nodo* H1)
-{
-    Hr = NULL;
-    nodo* t = NULL;
-    nodo* x = H1;
-    if (x == NULL)
-    {
-        cout<<"No hay nodos para extraer"<<endl;
-        return x;
-    }
-    int min = x->n;
-    nodo* p = x;
-    while (p->sibling != NULL)
-    {
-        if ((p->sibling)->n < min)
-        {
-            min = (p->sibling)->n;
-            t = p;
-            x = p->sibling;
-        }
-        p = p->sibling;
-    }
-    return x;
-}
-
-
