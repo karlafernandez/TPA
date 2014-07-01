@@ -1,11 +1,5 @@
-// FibonacciHeap.cpp : Defines the entry point for the console application.
-//
-
-#include "stdafx.h"
-
 #include <iostream>
 #include <fstream>
-#include <cstdlib>
 #include <math.h> 
 
 using namespace std;
@@ -50,19 +44,40 @@ public:
 	Node* min;
 	int n;
 
-	FibonacciHeap()
+	int* fib;
+
+	FibonacciHeap(int n_max = 1)
 	{
 		root = NULL;
 		min = NULL;
 		n = 0;
+		fib = new int[n_max];
+		fillFibonacci(n_max, fib);
 	}
 
-	int	maxTrees(int n)
+	int fillFibonacci(int n, int*& fib)
 	{
-		if(n == 0) return -1;
-		if(n == 1) return 1;
+		fib[0] = 0;
+		fib[1] = 1;
+		for(int i = 2; i < n; ++i)
+		{
+			fib[i] = fib[i - 1] + fib[i - 2];
+		}
+	}
+
+	int	upperBound(int n)
+	{
 		float golden_ratio = 1.61803;
-		return floor(log((float)n)/log(golden_ratio));
+		int upper = floor(log((float)n)/log(golden_ratio));
+		cout << "upper = " << upper << endl;
+		return upper;
+
+		//return fib[ (int)(ceil(log2(n))) + 1];
+	}
+
+	void fibSerie()
+	{
+
 	}
 
 	FibonacciHeap* makeHeap()
@@ -140,68 +155,105 @@ public:
 		}
 	}
 
-	void link(Node* y, Node* x)
+	void link(Node*& y, Node*& x)
 	{
+
 		y->left->right = y->right;
 		y->right->left = y->left;
+
 		y->left = NULL;
 		y->right = NULL;
-		x->child = y;
+
+		if(x->child == NULL)
+		{
+			x->child = y;
+		} else {
+			int i = 1;
+			Node* last = x->child;
+			while(i < x->degree) last = last->right, i++;
+			x->child->left = y;
+			y->right = x->child;
+			y->left = last;
+			last->right = y;
+			x->child = y;
+		}
+		
+
 		y->parent = x;
+
+		x->degree ++;
+		y->mark = false;
 	}
 
 	void printArray(Node**A, int n)
 	{
-		cout << "A = " << endl;
+		cout << "A = [";
 		for(int i = 0; i < n; i++)
 		{
 			if(A[i] == NULL) cout << " " << ", ";
 			else cout << A[i]->key << ", ";
 			
 		}
+		cout << "]";
 		cout << endl;
 	}
 
 	void consolidate()
 	{
-		int i, D_n = maxTrees(n);
+		int i, D_n = n;
+
+		cout << "D_n = " << D_n << endl;
 		Node** A = new Node*[D_n];
 
 		for(i = 0; i < D_n; ++i)
 			A[i] = NULL;
 
-		Node* x;
-		Node* w = root;
+		Node* w = min;
+		Node* x, *y;
+		Node* tmp;
 		i = 0;
-		while(i < (D_n + 1))
+
+		while(i < D_n)
 		{
 			x = w;
 			int d = x->degree;
+
 			while(A[d] != NULL)
 			{
-				Node* y = A[d];
-				if(x->key > y->key)
+				y = A[d];
+				if(x->key < y->key)
 				{
-					int tmp = x->key;
-					x->key = y->key;
-					y->key = tmp;
+			
+					link(y, x);
+					w = x;
+					x = x;
 				}
-				link(y, x);
+				else {
+
+					//   0, 3
+					link(x, y);
+					w = y;
+					x = y;
+				}
+
 				A[d] = NULL;
 				d = d + 1;
 			}
-			A[d] = x;
+
+			A[d] = w;
+			
 			w = w->right;
+
 			i++;
-			printArray(A, D_n);
+			//printArray(A, D_n);
 		}
-		
+
 		min = NULL;
 
 		for(i = 0; i < D_n; ++i)
 		{
 			if(A[i] != NULL)
-			{
+			{				
 				insert(A[i]);
 			}
 		}
@@ -245,6 +297,7 @@ public:
 	}
 
 
+
 	void union_h(FibonacciHeap* H1, FibonacciHeap* H2)
 	{
 		FibonacciHeap* H = makeHeap();
@@ -276,9 +329,9 @@ public:
 	}
 
 
-	void cut(FibonacciHeap* H1, Node* x, Node* y)
+	void cut(Node* x, Node* y)
 	{
-		if (x == x->right)
+		/*if (x == x->right)
 			y->child = NULL;
 			(x->left)->right = x->right;
 			(x->right)->left = x->left;
@@ -299,14 +352,12 @@ public:
 			//H1->left = x;
 
 			x->parent = NULL;
-			x->mark = false;
-
+			x->mark = false;        */
 	}
 
 	void cascadingCut(Node* y)
-	{
+	{/*
 		Node* y = A[d];
-
 		int z;
 		Node* x;
 		Node* w = root;
@@ -326,7 +377,7 @@ public:
 				y.mark = true;
 			else (
 				//cut(H, y, z);
-		//cascadingCut(H, z);
+		//cascadingCut(H, z);      */
 	}
 
 	void printTabs(int n)
@@ -368,7 +419,6 @@ public:
 		cout << "  degree = " << node->degree << endl;
 	}
 
-
 	void print(int toFile, FibonacciHeap* fh = 0)
 	{
 		if(fh == 0) fh = this;
@@ -384,10 +434,11 @@ public:
 		else
 		{
 			nNodes = 0;
-			int maxT = maxTrees(fh->n);
-			cout << "D_n = " << maxTrees(fh->n) << endl << endl;
+			int maxT = n;
+			cout << "D_n = " << maxT << endl << endl;
 
-			printRight(fh->root, 0, toFile, maxT);
+
+			printHeader(fh->root, 0, toFile, maxT);
 
 			if(toFile) 
 			{
@@ -397,16 +448,39 @@ public:
 		}
 	}
 
-	void printRight(Node* tempRight, int depth = 0, int toFile = 0, int maxT = 0)
+	void printHeader(Node* tempRight, int depth = 0, int toFile = 0, int maxT = 0)
 	{
 		int i = 0;
-		while(depth == 0 && i < maxT)
+		Node* tmp = tempRight;
+		while(i < maxT)
 		{
+			//cout<< "printHeader"<< endl;
 			printNode(tempRight, depth, nNodes, toFile);
 			nNodes++;
-			printChild(tempRight->child, depth, toFile);
+			printRight(tempRight, depth + 1, toFile);
 
 			tempRight = tempRight->right;
+			i++;
+			if(tempRight == tmp) break;
+		}
+	}
+
+	void printRight(Node* tempRight, int depth = 0, int toFile = 0, int maxT = 0)
+	{
+		
+		if(tempRight == NULL) return;
+		Node* rightChild = tempRight->child;
+
+		int i = 0;
+		while(i < tempRight->degree)
+		{
+			//cout<< "printRight"<< endl;
+			printNode(rightChild, depth, nNodes, toFile);
+			nNodes++;
+			
+			printChild(rightChild->child, depth, toFile);
+
+			rightChild = rightChild->right;
 			i++;
 		}
 	}
@@ -418,39 +492,46 @@ public:
 			depth++;
 			printNode(tempChild, depth, nNodes, toFile);
 			nNodes++;
+			//cout<< "printChild"<< endl;
 			printRight(tempChild->right, depth, toFile);
 			tempChild = tempChild->child;			
 		}
 	}
+
 };
 
 
 int main()
 {
 
-	FibonacciHeap F;
-	F.insert(0);
-	F.insert(1);
-	F.insert(2);
-	F.insert(3);
+	int n = 10;
+	FibonacciHeap F(n);
+
+	for(int i = 0; i < 1000; ++i)
+	{
+		F.insert(i);
+	}
+
+	//F.print(1);
+
+
+	//F.print(0);
+
+
+
 
 	//F.print(0);
 
 	cout<<"-------------------------------- "<<endl;
 	//Node::print(F.minimum());
 
+	F.consolidate();
 	cout<<"-------------------------------- "<<endl;
-
-	cout << F.maxTrees(0) << endl;
-	cout << F.maxTrees(1) << endl;
-	cout << F.maxTrees(2) << endl;
-	cout << F.maxTrees(3) << endl;
-	cout<<"-------------------------------- "<<endl;
-	
-	F.extractMin();
+	//F.extractMin();
 	F.print(1);
 
-	system("PAUSE");
+
+	//system("PAUSE");
 	
 	return 0;
 }
