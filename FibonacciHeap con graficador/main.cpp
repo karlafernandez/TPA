@@ -57,8 +57,8 @@ public:
 
 	int fillFibonacci(int n, int*& fib)
 	{
-		fib[0] = 0;
-		fib[1] = 1;
+		fib[0] = 1;
+		fib[1] = 2;
 		for(int i = 2; i < n; ++i)
 		{
 			fib[i] = fib[i - 1] + fib[i - 2];
@@ -67,17 +67,15 @@ public:
 
 	int	upperBound(int n)
 	{
-		float golden_ratio = 1.61803;
-		int upper = floor(log((float)n)/log(golden_ratio));
-		cout << "upper = " << upper << endl;
+		//float golden_ratio = 1.61803;
+		//int upper = ceil(log((float)n)/log(golden_ratio));
+		//cout << "upper = " << upper << endl;
+		//cout << "log2(n) = " << log2(n) << endl;
+		if(n <= 0) return 0;
+		int upper = (int)(ceil(log2(n)));
 		return upper;
 
 		//return fib[ (int)(ceil(log2(n))) + 1];
-	}
-
-	void fibSerie()
-	{
-
 	}
 
 	FibonacciHeap* makeHeap()
@@ -123,7 +121,7 @@ public:
 		}
 	}
 
-	void insert(Node*& x)
+	void insert(Node*& x, int notn = 0)
 	{
 		if(min == NULL)
 		{
@@ -151,7 +149,7 @@ public:
 			{
 				min = x;
 			}
-			n = n + 1;
+			if(!notn) n = n + 1;
 		}
 	}
 
@@ -198,11 +196,12 @@ public:
 		cout << endl;
 	}
 
-	void consolidate()
+	void consolidate(int cheap = 0)
 	{
-		int i, D_n = n;
+		int i, D_n = upperBound(n - 1) + 1;
 
 		cout << "D_n = " << D_n << endl;
+		cout << "n = " << n << endl;
 		Node** A = new Node*[D_n];
 
 		for(i = 0; i < D_n; ++i)
@@ -213,27 +212,47 @@ public:
 		Node* tmp;
 		i = 0;
 
-		while(i < D_n)
+		int nheads;
+		if(!cheap) nheads = n;
+		else nheads = D_n;
+
+		while(i < n)
 		{
 			x = w;
 			int d = x->degree;
+
+			cout << "CABEZA = w->key = " << w->key << endl;
 
 			while(A[d] != NULL)
 			{
 				y = A[d];
 				if(x->key < y->key)
 				{
-			
+					cout << "****** 1er if" << endl;
+					cout << "--------------- link -------------" << endl;
+					cout << "y->key = " << y->key << endl;
+					cout << "x->key = " << x->key << endl;
+					cout << "parent = " << x->key << endl;
+					cout << "----------------------------------" << endl;
+
 					link(y, x);
 					w = x;
 					x = x;
+					cout << "NUEVO = w->key = " << w->key << endl;
 				}
 				else {
+					cout << "****** 2do if" << endl;
+					cout << "--------------- link -------------" << endl;
+					cout << "y->key = " << y->key << endl;
+					cout << "x->key = " << x->key << endl;
+					cout << "parent = " << y->key << endl;
+					cout << "----------------------------------" << endl;
 
 					//   0, 3
 					link(x, y);
 					w = y;
 					x = y;
+					cout << "NUEVO = w->key = " << w->key << endl;
 				}
 
 				A[d] = NULL;
@@ -254,48 +273,73 @@ public:
 		{
 			if(A[i] != NULL)
 			{				
-				insert(A[i]);
+				insert(A[i], 1);
 			}
 		}
+		cout << endl;
 	}
 
 	Node* extractMin()
 	{
-		if(n == 1)
-		{
-			root = NULL;
-			min = NULL;
-			n = n - 1;
-			return NULL;
-		}
+		cout << "------------- extractMin ------------" << endl;
+		cout << "n = " << n << endl;
 
 		Node* z = min;
 		if(z != NULL)
 		{
+			cout << "z->key = " << z->key << endl;
 			Node* x = z->child;
-			while(x != NULL)
+			int i = 0;
+			while(i < z->degree)
 			{
-				insert(x);
+				//insert(x, 1);
 				x->parent = NULL;
 				x = x->right;
-			}
-			
-			z->left->right = z->right;
-			z->right->left = z->left;
+				cout << "x->right->key = " << x->right->key << endl;
 
-			if(z == z->right)
-				min = NULL;
-			else{
-				min = z->right;
-				root = min;
+				i++;
 			}
 
-			consolidate();
 			n = n - 1;
+			cout << "n = " << n << endl;
+			if(z == z->right)
+			{
+				
+				cout << "Solo raiz" << endl;
+				root = z->child;
+				cout << "Nueva raiz = " << root->key << endl;
+
+				cout << "root->right->key = " << root->right->key << endl;
+				cout << "root->right->right->key = " << root->right->right->key << endl;
+				cout << "root->child->key = " << root->child->key << endl;
+				
+				min = NULL;
+			}
+			else{
+				if(z->child != NULL)
+				{
+					z->right->left = x->left;
+					z->left->right = z->child;
+					z->child->left = z->left;
+					x->left->right = z->right;	
+				}
+				else
+				{
+					z->right->left = z->left;
+					z->left->right = z->right;
+				}
+
+				min = z->left;
+				root = z->left;
+
+				cout << "NUEVO MIN = " << min->key << endl;
+				cout << "consolidate ---> " << endl;
+				consolidate();
+			}
 		}
+
 		return z;
 	}
-
 
 
 	void union_h(FibonacciHeap* H1, FibonacciHeap* H2)
@@ -331,53 +375,38 @@ public:
 
 	void cut(Node* x, Node* y)
 	{
-		/*if (x == x->right)
-			y->child = NULL;
-			(x->left)->right = x->right;
-			(x->right)->left = x->left;
-		if (x == y->child)
-			y->child = x->right;
-			y->degree = y->degree - 1;
-			x->right = x;
-			x->left = x;
+		x->right->left = x->left;
+		x->left->right = x->right;
+		if(y->child == x) y->child = x->right;
+		y->degree = y->degree - 1;
+		delete y;
+		///////////////////////
+		x->left = min->left;
+		x->right = min; 
+		min->left->right = x;
+		min->left = x;
+		x->parent = NULL;
+		x->mark = false;
+	}
 
-			y->left->right = y->right;
-			y->right->left = y->left;
-			y->left = NULL;
-			y->right = NULL;
-
-			//(H1->left)->right = x; //del pseudo cormen?
-			//x->right = H1;
-			//x->left = H1->left;
-			//H1->left = x;
-
-			x->parent = NULL;
-			x->mark = false;        */
+	void deleteH(Node* x){
+		decreaseKey(x, -99999);
+		extractMin();
 	}
 
 	void cascadingCut(Node* y)
-	{/*
-		Node* y = A[d];
-		int z;
-		Node* x;
-		Node* w = root;
-		i = 0;
-				link(y, x);
-				A[d] = NULL;
-				d = d + 1;
-		
-			A[d] = x;
-			w = w->right;
-			i++;
-			printArray(A, D_n);
-		Node* z = min;
-		z = y->parent;
-		if (z = NULL)
-			if ( y.mark == false) 
-				y.mark = true;
-			else (
-				//cut(H, y, z);
-		//cascadingCut(H, z);      */
+	{
+		Node* z = y->parent;
+		if(z != NULL)
+		{
+			if(y->mark == false)
+				y->mark = true;
+			else
+			{
+				cut(y,z);
+				cascadingCut(z);
+			}
+		}
 	}
 
 	void printTabs(int n)
@@ -397,9 +426,21 @@ public:
 		if(toFile){
 			if(depth == 0) 
 			{
-				if(node->right != NULL) file << node->key << " -> " << node->right->key << endl;
+				if(node->right != NULL)
+				{
+					file << node->key << " -> " << node->right->key << endl;	
+					file << node->right->key << " -> " << node->key << endl;
+				} 
 			}
-			else file << node->parent->key << " -> " << node->key << endl;
+			else {
+				file << node->parent->key << " -> " << node->key << endl;
+				file << node->key << " -> " << node->parent->key << endl;
+				if(node->right != NULL)
+				{
+					file << node->key << " -> " << node->right->key << endl;	
+					//file << node->right->key << " -> " << node->key << endl;
+				}
+			}
 		}
 		else
 		{ 
@@ -505,9 +546,9 @@ int main()
 {
 
 	int n = 10;
-	FibonacciHeap F(n);
+	FibonacciHeap F(2*n);
 
-	for(int i = 0; i < 1000; ++i)
+	for(int i = 0; i < n; ++i)
 	{
 		F.insert(i);
 	}
@@ -517,7 +558,9 @@ int main()
 
 	//F.print(0);
 
+	F.consolidate();
 
+	F.print(1);
 
 
 	//F.print(0);
@@ -525,10 +568,11 @@ int main()
 	cout<<"-------------------------------- "<<endl;
 	//Node::print(F.minimum());
 
-	F.consolidate();
+	//
 	cout<<"-------------------------------- "<<endl;
 	//F.extractMin();
-	F.print(1);
+	
+	//F.print(1);
 
 
 	//system("PAUSE");
